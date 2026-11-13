@@ -1,0 +1,474 @@
+
+# =====================================================
+# JARVIS PERSONAL AI ASSISTANT
+# Version 1.0
+# =====================================================
+
+import speech_recognition as sr
+import pyttsx3
+import datetime
+import webbrowser
+import urllib.parse
+import random
+import sys
+
+# =====================================================
+# SETTINGS
+# =====================================================
+
+APP_NAME = "JARVIS"
+
+MICROPHONE_ENABLED = False
+RUNNING = True
+
+# =====================================================
+# VOICE ENGINE
+# =====================================================
+
+speaker = pyttsx3.init()
+speaker.setProperty("rate", 175)
+speaker.setProperty("volume", 1.0)
+
+recognizer = sr.Recognizer()
+recognizer.pause_threshold = 0.8
+
+
+def speak(message):
+    print("\nJARVIS:", message)
+
+    try:
+        speaker.say(message)
+        speaker.runAndWait()
+    except Exception as error:
+        print("Voice error:", error)
+
+
+# =====================================================
+# STARTUP
+# =====================================================
+
+def startup():
+    print("=" * 45)
+    print("          J.A.R.V.I.S.")
+    print("    PERSONAL AI ASSISTANT")
+    print("=" * 45)
+
+    speak("JARVIS systems online.")
+    speak("Microphone is currently disabled.")
+    speak("Waiting for your instructions.")
+
+
+# =====================================================
+# MICROPHONE PERMISSIONS
+# =====================================================
+
+def enable_microphone():
+    global MICROPHONE_ENABLED
+
+    if MICROPHONE_ENABLED:
+        speak("Microphone is already enabled.")
+        return
+
+    print("\nMICROPHONE ACCESS")
+    print("JARVIS needs permission to hear your commands.")
+
+    permission = input(
+        "Do you approve microphone access? (yes/no): "
+    ).lower().strip()
+
+    if permission != "yes":
+        speak("Microphone remains disabled.")
+        return
+
+    try:
+        with sr.Microphone() as source:
+            recognizer.adjust_for_ambient_noise(
+                source, duration=1
+            )
+
+        MICROPHONE_ENABLED = True
+        speak("Microphone session enabled.")
+
+    except Exception as error:
+        MICROPHONE_ENABLED = False
+        speak("Microphone unavailable.")
+        print(error)
+
+
+def disable_microphone():
+    global MICROPHONE_ENABLED
+
+    MICROPHONE_ENABLED = False
+    speak("Microphone disabled.")
+
+
+# =====================================================
+# VOICE RECOGNITION
+# =====================================================
+
+def listen_once():
+
+    if not MICROPHONE_ENABLED:
+        speak("Microphone access has not been enabled.")
+        return ""
+
+    try:
+        with sr.Microphone() as source:
+
+            print("\nListening...")
+            audio = recognizer.listen(
+                source,
+                timeout=10,
+                phrase_time_limit=10
+            )
+
+        command = recognizer.recognize_google(audio)
+
+        print("\nYOU:", command)
+
+        return command.lower()
+
+    except sr.WaitTimeoutError:
+        print("No speech detected.")
+
+    except sr.UnknownValueError:
+        speak("I didn't understand that.")
+
+    except sr.RequestError:
+        speak("Speech recognition service unavailable.")
+
+    except Exception as error:
+        print("Microphone error:", error)
+
+    return ""
+
+
+# =====================================================
+# LANGUAGE LEARNING
+# =====================================================
+
+def spanish_lesson():
+    speak(
+        "Spanish lesson. "
+        "Hola means hello. "
+        "Gracias means thank you. "
+        "Por favor means please. "
+        "Buenos días means good morning."
+    )
+
+
+def french_lesson():
+    speak(
+        "French lesson. "
+        "Bonjour means hello. "
+        "Merci means thank you. "
+        "S'il vous plaît means please."
+    )
+
+
+def german_lesson():
+    speak(
+        "German lesson. "
+        "Hallo means hello. "
+        "Danke means thank you. "
+        "Bitte means please."
+    )
+
+
+# =====================================================
+# SCIENCE FACTS
+# =====================================================
+
+def science_fact():
+
+    facts = [
+        "A day on Venus is longer than its year.",
+        "Jupiter is the largest planet in our solar system.",
+        "Light from the Sun takes about eight minutes to reach Earth.",
+        "Octopuses have three hearts.",
+        "Saturn is less dense than water."
+    ]
+
+    speak(random.choice(facts))
+
+
+# =====================================================
+# INTERNET SEARCH
+# =====================================================
+
+def search_web(query):
+
+    if not query:
+        speak("What would you like me to search for?")
+        return
+
+    url = (
+        "https://www.google.com/search?q="
+        + urllib.parse.quote_plus(query)
+    )
+
+    speak("Opening your search.")
+    webbrowser.open(url)
+
+
+# =====================================================
+# AI RESPONSE ENGINE
+# =====================================================
+
+def ai_response(command):
+
+    command = command.lower().strip()
+
+    if any(word in command for word in [
+        "hello", "hi jarvis", "hey jarvis"
+    ]):
+        speak("Hello. JARVIS is online.")
+
+    elif "time" in command:
+        current_time = datetime.datetime.now().strftime(
+            "%I:%M %p"
+        )
+        speak("The current time is " + current_time)
+
+    elif "date" in command:
+        current_date = datetime.datetime.now().strftime(
+            "%A, %B %d, %Y"
+        )
+        speak("Today's date is " + current_date)
+
+    elif "spanish" in command:
+        spanish_lesson()
+
+    elif "french" in command:
+        french_lesson()
+
+    elif "german" in command:
+        german_lesson()
+
+    elif "science fact" in command:
+        science_fact()
+
+    elif command.startswith("search for "):
+        query = command.replace("search for ", "", 1)
+        search_web(query)
+
+    elif command.startswith("search "):
+        query = command.replace("search ", "", 1)
+        search_web(query)
+
+    elif "who are you" in command:
+        speak(
+            "I am JARVIS, your personal assistant."
+        )
+
+    elif "how are you" in command:
+        speak(
+            "All systems are operating within normal parameters."
+        )
+
+    elif "help" in command:
+        show_help()
+
+    elif "stop listening" in command:
+        disable_microphone()
+
+    elif "exit jarvis" in command:
+        shutdown()
+
+    else:
+        speak(
+            "I heard your request, but I do not have "
+            "a connected advanced AI service yet."
+        )
+
+
+# =====================================================
+# HELP MENU
+# =====================================================
+
+def show_help():
+
+    speak("Here are some commands you can use.")
+
+    print("""
+    JARVIS COMMANDS
+
+    HELLO:
+        Hello Jarvis
+
+    TIME:
+        What time is it?
+
+    DATE:
+        What is today's date?
+
+    LANGUAGES:
+        Teach me Spanish
+        Teach me French
+        Teach me German
+
+    SCIENCE:
+        Give me a science fact
+
+    INTERNET:
+        Search for space news
+
+    MICROPHONE:
+        Enable microphone
+        Disable microphone
+
+    EXIT:
+        Exit Jarvis
+    """)
+
+
+# =====================================================
+# CONTINUOUS LISTENING SESSION
+# =====================================================
+
+def continuous_listening():
+
+    if not MICROPHONE_ENABLED:
+        speak("Please enable the microphone first.")
+        return
+
+    speak("Continuous listening session started.")
+    speak("Say stop listening to end this session.")
+
+    while MICROPHONE_ENABLED and RUNNING:
+
+        command = listen_once()
+
+        if not command:
+            continue
+
+        if "stop listening" in command:
+            disable_microphone()
+            break
+
+        if "exit jarvis" in command:
+            shutdown()
+            break
+
+        ai_response(command)
+
+
+# =====================================================
+# TEXT COMMANDS
+# =====================================================
+
+def text_command():
+
+    command = input("\nYOU: ").strip()
+
+    if command.lower() == "exit":
+        shutdown()
+        return
+
+    if command.lower() == "enable microphone":
+        enable_microphone()
+        return
+
+    if command.lower() == "disable microphone":
+        disable_microphone()
+        return
+
+    ai_response(command)
+
+
+# =====================================================
+# SHUTDOWN
+# =====================================================
+
+def shutdown():
+
+    global RUNNING
+    global MICROPHONE_ENABLED
+
+    MICROPHONE_ENABLED = False
+    RUNNING = False
+
+    speak("JARVIS shutting down.")
+    sys.exit(0)
+
+
+# =====================================================
+# MAIN PROGRAM
+# =====================================================
+
+def main():
+
+    startup()
+
+    while RUNNING:
+
+        print("""
+    =================================
+               JARVIS
+    =================================
+
+    1. Enable microphone
+    2. Start continuous listening
+    3. Disable microphone
+    4. Type a command
+    5. Language lessons
+    6. Science fact
+    7. Help
+    8. Exit
+
+    =================================
+        """)
+
+        choice = input("Select an option: ").strip()
+
+        if choice == "1":
+            enable_microphone()
+
+        elif choice == "2":
+            continuous_listening()
+
+        elif choice == "3":
+            disable_microphone()
+
+        elif choice == "4":
+            text_command()
+
+        elif choice == "5":
+            print("""
+            1. Spanish
+            2. French
+            3. German
+            """)
+
+            language = input("Choose language: ")
+
+            if language == "1":
+                spanish_lesson()
+            elif language == "2":
+                french_lesson()
+            elif language == "3":
+                german_lesson()
+
+        elif choice == "6":
+            science_fact()
+
+        elif choice == "7":
+            show_help()
+
+        elif choice == "8":
+            shutdown()
+
+        else:
+            print("Invalid selection.")
+
+
+# =====================================================
+# START JARVIS
+# =====================================================
+
+if __name__ == "__main__":
+    try:
+        main()
+
+    except KeyboardInterrupt:
+        shutdown()
